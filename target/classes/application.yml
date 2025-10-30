@@ -1,0 +1,16 @@
+server:
+  port: 8080
+
+aws:
+  region: eu-central-1
+  s3:
+    bucket: aws-s3-file-uploader-bucket
+    publicReadAcl: true
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 25MB
+
+
