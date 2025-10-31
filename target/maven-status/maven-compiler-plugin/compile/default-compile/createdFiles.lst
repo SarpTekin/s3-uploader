@@ -1,0 +1,6 @@
+com/sarptekin/awsuploader/S3Uploader.class
+com/sarptekin/awsuploader/service/S3StorageService.class
+com/sarptekin/awsuploader/S3UploaderApplication.class
+com/sarptekin/awsuploader/controller/UploadController.class
+com/sarptekin/awsuploader/config/S3Config.class
+com/sarptekin/awsuploader/App.class

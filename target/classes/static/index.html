@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>S3 Uploader</title>
+  <style>
+    body { 
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; 
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      background: #f9fafb;
+    }
+    .container {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .card { 
+      padding: 24px; 
+      border: 1px solid #e5e7eb; 
+      border-radius: 12px; 
+      box-shadow: 0 1px 3px rgba(0,0,0,.05);
+      background: white;
+    }
+    label { display:block; margin: 12px 0 6px; font-weight: 600; }
+    input[type="text"] { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; box-sizing: border-box; }
+    input[type="file"] { padding: 8px 0; }
+    button { margin-top: 16px; background:#111827; color:white; padding:10px 16px; border:none; border-radius:8px; cursor:pointer; }
+    button:disabled { opacity:.6; cursor:not-allowed; }
+    .result { margin-top:16px; padding:12px; border-radius:8px; }
+    .ok { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
+    .err { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
+    .muted { color:#6b7280; font-size: 14px; }
+    .file-list {
+      margin-top: 16px;
+    }
+    .file-item {
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f9fafb;
+    }
+    .file-item a {
+      color: #2563eb;
+      text-decoration: none;
+      word-break: break-all;
+    }
+    .file-item a:hover {
+      text-decoration: underline;
+    }
+    .file-name {
+      font-weight: 500;
+      color: #111827;
+    }
+    .refresh-btn {
+      background: #3b82f6;
+      margin: 0;
+    }
+    .file-list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+  </style>
+  <script>
+    async function uploadFile(ev) {
+      ev.preventDefault();
+      const fileInput = document.getElementById('file');
+      const folderInput = document.getElementById('folder');
+      const btn = document.getElementById('uploadBtn');
+      const resBox = document.getElementById('result');
+      resBox.className = 'result muted';
+      resBox.textContent = 'Uploading…';
+
+      if (!fileInput.files || fileInput.files.length === 0) {
+        resBox.className = 'result err';
+        resBox.textContent = 'Please choose a file.';
+        return;
+      }
+
+      const form = new FormData();
+      form.append('file', fileInput.files[0]);
+      if (folderInput.value.trim()) form.append('folder', folderInput.value.trim());
+
+      btn.disabled = true;
+      try {
+        const resp = await fetch('/api/upload', { method: 'POST', body: form });
+        const text = await resp.text();
+        if (resp.ok) {
+          resBox.className = 'result ok';
+          // If server returned a URL string, make it clickable
+          const url = text.replace(/^"|"$/g, '');
+          resBox.innerHTML = 'Uploaded: <a href="' + url + '" target="_blank" rel="noopener noreferrer">' + url + '</a>';
+          // Refresh file list after successful upload
+          loadFileList();
+        } else {
+          resBox.className = 'result err';
+          let errorMsg = text;
+          try {
+            const json = JSON.parse(text);
+            errorMsg = json.error || json.message || text;
+          } catch (e) {
+            // Not JSON, use text as-is
+          }
+          resBox.textContent = 'Upload failed (' + resp.status + '): ' + errorMsg;
+        }
+      } catch (e) {
+        resBox.className = 'result err';
+        resBox.textContent = 'Upload failed: ' + (e?.message || e);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function loadFileList() {
+      const listDiv = document.getElementById('fileList');
+      const loading = listDiv.querySelector('.muted');
+      if (loading) loading.textContent = 'Loading files...';
+
+      try {
+        const resp = await fetch('/api/files');
+        const files = await resp.json();
+        listDiv.innerHTML = '<div class="file-list-header"><h3>Files in S3</h3><button class="refresh-btn" onclick="loadFileList()">Refresh</button></div>';
+        
+        if (files.length === 0) {
+          listDiv.innerHTML += '<p class="muted">No files found.</p>';
+          return;
+        }
+
+        files.forEach(file => {
+          const item = document.createElement('div');
+          item.className = 'file-item';
+          item.innerHTML = `
+            <div>
+              <div class="file-name">${escapeHtml(file.name)}</div>
+              <div class="muted" style="font-size: 12px; margin-top: 4px;">${file.size || 'Unknown size'} • ${file.lastModified || ''}</div>
+            </div>
+            <a href="${escapeHtml(file.url)}" target="_blank" rel="noopener noreferrer">Open</a>
+          `;
+          listDiv.appendChild(item);
+        });
+      } catch (e) {
+        listDiv.innerHTML = '<p class="muted">Failed to load files: ' + escapeHtml(e.message) + '</p>';
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Load file list on page load
+    window.addEventListener('DOMContentLoaded', loadFileList);
+  </script>
+  </head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h2>S3 Uploader</h2>
+      <p class="muted">Select a file and click Upload to upload to S3.</p>
+      <form onsubmit="uploadFile(event)">
+        <label for="file">File</label>
+        <input id="file" name="file" type="file" required />
+
+        <label for="folder">Folder (optional)</label>
+        <input id="folder" name="folder" type="text" placeholder="e.g. receipts/2025" />
+
+        <button id="uploadBtn" type="submit">Upload</button>
+      </form>
+      <div id="result" class="result"></div>
+    </div>
+
+    <div class="card">
+      <div id="fileList">
+        <p class="muted">Loading files...</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
+

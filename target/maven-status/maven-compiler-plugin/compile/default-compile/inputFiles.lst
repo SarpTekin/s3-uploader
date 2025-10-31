@@ -1,0 +1,8 @@
+/Users/sarptekin/s3-uploader/src/main/java/com/sarptekin/awsuploader/S3Uploader.java
+/Users/sarptekin/s3-uploader/src/main/java/com/sarptekin/awsuploader/service/S3StorageService.java
+/Users/sarptekin/s3-uploader/src/main/java/com/sarptekin/awsuploader/S3UploaderApplication.java
+/Users/sarptekin/s3-uploader/src/main/java/com/sarptekin/awsuploader/config/S3Config.java
+/Users/sarptekin/s3-uploader/src/main/java/com/sarptekin/awsuploader/App.java
+/Users/sarptekin/s3-uploader/src/main/java/com/sarptekin/awsuploader/controller/UploadController.java
+/Users/sarptekin/s3-uploader/src/main/java/com/sarptekin/awsuploader/ui/UploaderUI.java
+/Users/sarptekin/s3-uploader/src/main/java/com/sarptekin/awsuploader/ui/UiLauncher.java
